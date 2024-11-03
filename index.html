@@ -12,31 +12,35 @@
             justify-content: center;
             margin: 0;
             height: 100vh;
-            background-image: url('fondo2.jpg'); /* Fondo de página */
+            background-image: url('fondo.png'); /* Usar fondo.png como fondo de la página */
             background-size: cover; /* Cubrir toda la página */
         }
         canvas {
             border: 2px solid #c76a33; /* Color de borde */
-            background-image: url('fondo1.png'); /* Fondo del canvas */
-            background-size: cover; /* Cubrir todo el canvas */
+            background-color: #fff; /* Color de fondo del canvas */
             width: 100%; /* Adaptar al ancho de la pantalla */
             max-width: 500px; /* Tamaño máximo */
             height: auto; /* Altura automática */
         }
-        #controls {
+        #joystick {
+            position: relative;
+            width: 150px;
+            height: 150px;
+            border: 2px solid #c76a33; /* Color de borde */
+            border-radius: 75px; /* Hacerlo circular */
+            background-color: rgba(255, 255, 255, 0.7); /* Fondo semitransparente */
             display: flex;
+            align-items: center;
             justify-content: center;
             margin-top: 20px;
         }
-        .button {
-            background-color: #c76a33;
-            color: white;
-            border: none;
-            padding: 10px;
-            margin: 5px;
-            cursor: pointer;
-            border-radius: 5px;
-            font-size: 20px;
+        .stick {
+            width: 60px;
+            height: 60px;
+            border-radius: 30px; /* Hacerlo circular */
+            background-color: #c76a33; /* Color del joystick */
+            position: absolute;
+            transition: all 0.1s ease; /* Animación suave */
         }
         #reset {
             margin-top: 20px;
@@ -47,13 +51,8 @@
     <h1>Real Team Snake</h1>
     <canvas id="snake" width="500" height="500"></canvas>
     
-    <div id="controls">
-        <button class="button" id="up">↑</button>
-        <div>
-            <button class="button" id="left">←</button>
-            <button class="button" id="right">→</button>
-        </div>
-        <button class="button" id="down">↓</button>
+    <div id="joystick">
+        <div class="stick" id="stick"></div>
     </div>
     <button class="button" id="reset">Reiniciar</button>
 
@@ -71,7 +70,7 @@
         let score = 0;
         let lives = 1; // Vidas iniciales
         const backgroundImage = new Image();
-        backgroundImage.src = 'fondo1.png'; // Fondo del canvas
+        backgroundImage.src = 'fondo.png'; // Usar fondo.png
 
         // Configurar música de fondo
         const backgroundMusic = document.getElementById('backgroundMusic');
@@ -99,6 +98,7 @@
 
         // Función para dibujar el fondo y el texto
         function drawBackground() {
+            context.clearRect(0, 0, canvas.width, canvas.height); // Limpiar el canvas
             context.drawImage(backgroundImage, 0, 0, canvas.width, canvas.height);
             context.fillStyle = '#c76a33'; // Color del texto
             context.font = '32px Arial';
@@ -186,20 +186,61 @@
             spawnFood(); // Generar nueva comida
         }
 
-        // Controlar la dirección
-        function changeDirection(newDirection) {
-            // Evitar que la culebrita gire 180 grados
-            if (newDirection === 'LEFT' && direction !== 'RIGHT') direction = 'LEFT';
-            if (newDirection === 'UP' && direction !== 'DOWN') direction = 'UP';
-            if (newDirection === 'RIGHT' && direction !== 'LEFT') direction = 'RIGHT';
-            if (newDirection === 'DOWN' && direction !== 'UP') direction = 'DOWN';
+        // Controlar la dirección según la posición del joystick
+        function moveStick(event) {
+            const stick = document.getElementById('stick');
+            const joystick = document.getElementById('joystick');
+            const rect = joystick.getBoundingClientRect();
+            const centerX = rect.left + rect.width / 2;
+            const centerY = rect.top + rect.height / 2;
+            const offsetX = event.clientX - centerX;
+            const offsetY = event.clientY - centerY;
+            const distance = Math.sqrt(offsetX * offsetX + offsetY * offsetY);
+
+            // Limitar el movimiento del stick a un radio específico
+            const maxDistance = 50;
+            if (distance > maxDistance) {
+                const angle = Math.atan2(offsetY, offsetX);
+                stick.style.left = `${centerX + Math.cos(angle) * maxDistance - 30}px`;
+                stick.style.top = `${centerY + Math.sin(angle) * maxDistance - 30}px`;
+            } else {
+                stick.style.left = `${event.clientX - 30}px`;
+                stick.style.top = `${event.clientY - 30}px`;
+            }
+
+            // Cambiar dirección según la posición del stick
+            if (Math.abs(offsetX) > Math.abs(offsetY)) {
+                direction = offsetX > 0 ? 'RIGHT' : 'LEFT';
+            } else {
+                direction = offsetY > 0 ? 'DOWN' : 'UP';
+            }
         }
 
-        // Event listeners para controlar el juego con botones
-        document.getElementById('up').addEventListener('click', () => changeDirection('UP'));
-        document.getElementById('down').addEventListener('click', () => changeDirection('DOWN'));
-        document.getElementById('left').addEventListener('click', () => changeDirection('LEFT'));
-        document.getElementById('right').addEventListener('click', () => changeDirection('RIGHT'));
+        // Resetear la posición del joystick al soltar el mouse/touch
+        function resetStick() {
+            const stick = document.getElementById('stick');
+            stick.style.left = `50%`;
+            stick.style.top = `50%`;
+            direction = ''; // Detener la dirección
+        }
+
+        // Añadir eventos para el joystick
+        const joystick = document.getElementById('joystick');
+        joystick.addEventListener('mousedown', (event) => {
+            moveStick(event);
+            document.addEventListener('mousemove', moveStick);
+        });
+
+        joystick.addEventListener('mouseup', resetStick);
+        joystick.addEventListener('mouseleave', resetStick);
+
+        // Para dispositivos táctiles
+        joystick.addEventListener('touchstart', (event) => {
+            moveStick(event.touches[0]);
+            document.addEventListener('touchmove', moveStick);
+        });
+
+        joystick.addEventListener('touchend', resetStick);
 
         // Iniciar la música de fondo en la primera interacción con el botón de reinicio
         document.getElementById('reset').addEventListener('click', () => {
@@ -207,8 +248,8 @@
             startBackgroundMusic(); // Iniciar música al reiniciar el juego
         });
 
-        // Llama a la función de dibujo en un bucle, ajustando la velocidad a 200 ms
-        setInterval(draw, 200);
+        // Llama a la función de dibujo en un bucle, ajustando la velocidad a 300 ms para reducir la velocidad
+        setInterval(draw, 300);
         
         // Iniciar música de fondo en la primera interacción
         window.addEventListener('click', startBackgroundMusic);
