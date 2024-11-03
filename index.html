@@ -70,11 +70,22 @@
             height: 50px;
             font-size: 18px;
         }
+        #score {
+            font-size: 24px;
+            color: white;
+            margin-top: 10px;
+        }
+        video {
+            margin-top: 20px;
+            width: 90%;
+            max-width: 500px;
+        }
     </style>
 </head>
 <body>
     <h1>Real Team Snake</h1>
     <canvas id="snake" width="500" height="500"></canvas>
+    <div id="score">Puntos: 0</div>
     
     <div id="dpad">
         <div class="dpad-row">
@@ -100,11 +111,15 @@
         <button class="button" id="no">No</button>
     </div>
 
+    <!-- Video de Faraón Love Shady -->
+    <video controls>
+        <source src="SIENDO FARAON LOVE SHADY(HD).mp4" type="video/mp4">
+        Tu navegador no soporta el elemento de video.
+    </video>
+
     <audio id="eatSound" src="AUD-20241103-WA0001.aac"></audio>
-    <audio id="backgroundMusic" src="AUD-20241103-WA0003.aac" loop></audio>
 
     <script>
-        // Configuración del juego de la culebrita
         const canvas = document.getElementById('snake');
         const context = canvas.getContext('2d');
         const box = 20;
@@ -114,17 +129,6 @@
         let specialFood = {};
         let score = 0;
         let lives = 1;
-        const backgroundImage = new Image();
-        backgroundImage.src = 'fondo.png';
-
-        const backgroundMusic = document.getElementById('backgroundMusic');
-        backgroundMusic.volume = 0.5;
-
-        function startBackgroundMusic() {
-            backgroundMusic.play().catch((error) => {
-                console.error("Error al reproducir la música de fondo:", error);
-            });
-        }
 
         function spawnFood() {
             food = { x: Math.floor(Math.random() * (canvas.width / box)) * box, y: Math.floor(Math.random() * (canvas.height / box)) * box };
@@ -135,11 +139,14 @@
             }
         }
 
+        function updateScore() {
+            document.getElementById('score').innerText = `Puntos: ${score}`;
+        }
+
         spawnFood();
 
         function drawBackground() {
             context.clearRect(0, 0, canvas.width, canvas.height);
-            context.drawImage(backgroundImage, 0, 0, canvas.width, canvas.height);
             context.fillStyle = '#c76a33';
             context.font = '32px Arial';
             context.textAlign = 'center';
@@ -181,11 +188,13 @@
             if (snakeX === food.x && snakeY === food.y) {
                 document.getElementById('eatSound').play();
                 score++;
+                updateScore();
                 spawnFood();
             } else if (snakeX === specialFood.x && snakeY === specialFood.y) {
                 document.getElementById('eatSound').play();
                 lives += 3;
                 score++;
+                updateScore();
                 specialFood = {};
                 spawnFood();
             } else {
@@ -213,6 +222,7 @@
             snake = [{ x: 9 * box, y: 9 * box }];
             direction = '';
             score = 0;
+            updateScore();
             lives = 1;
             spawnFood();
         }
@@ -237,7 +247,6 @@
 
         document.getElementById('yes').addEventListener('click', () => {
             resetGame();
-            startBackgroundMusic();
             document.getElementById('confirm-reset').style.display = 'none';
         });
 
@@ -245,15 +254,12 @@
             document.getElementById('confirm-reset').style.display = 'none';
         });
 
-        setInterval(draw, 500);  // Velocidad reducida
-        window.addEventListener('click', startBackgroundMusic);
+        setInterval(draw, 500);
 
-        // Evitar el doble clic para zoom
         document.addEventListener('dblclick', (event) => {
             event.preventDefault();
         });
 
-        // Desactivar el zoom de pellizco
         document.addEventListener('gesturestart', (event) => {
             event.preventDefault();
         });
