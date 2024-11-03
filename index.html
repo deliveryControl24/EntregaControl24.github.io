@@ -12,14 +12,13 @@
             justify-content: center;
             margin: 0;
             height: 100vh;
-            background-image: url('fondo.png');
             background-size: cover;
             overflow: hidden;
         }
         canvas {
             border: 2px solid #c76a33;
             background-color: #fff;
-            width: 100%;
+            width: 90%;
             max-width: 500px;
             height: auto;
         }
@@ -70,34 +69,6 @@
             height: 50px;
             font-size: 18px;
         }
-        #buscaminas {
-            margin-top: 30px;
-            display: grid;
-            grid-template-columns: repeat(10, 30px);
-            gap: 2px;
-        }
-        .cell {
-            width: 30px;
-            height: 30px;
-            background-color: #eee;
-            border: 1px solid #aaa;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 16px;
-            cursor: pointer;
-        }
-        #buscaminas-reset {
-            display: none;
-            margin-top: 10px;
-            background-color: #c76a33;
-            color: white;
-            border: none;
-            padding: 10px;
-            cursor: pointer;
-            border-radius: 5px;
-            font-size: 18px;
-        }
     </style>
 </head>
 <body>
@@ -128,10 +99,6 @@
         <button class="button" id="no">No</button>
     </div>
 
-    <h1>Busca Extreme</h1>
-    <div id="buscaminas"></div>
-    <button id="buscaminas-reset">Reiniciar Buscaminas</button>
-
     <audio id="eatSound" src="AUD-20241103-WA0001.aac"></audio>
     <audio id="backgroundMusic" src="AUD-20241103-WA0003.aac" loop></audio>
 
@@ -147,7 +114,7 @@
         let score = 0;
         let lives = 1;
         const backgroundImage = new Image();
-        backgroundImage.src = 'fondo.png';
+        let currentBackgroundIndex = 1;
 
         const backgroundMusic = document.getElementById('backgroundMusic');
         backgroundMusic.volume = 0.5;
@@ -167,7 +134,13 @@
             }
         }
 
+        function changeBackground() {
+            currentBackgroundIndex = Math.floor(Math.random() * 17) + 1;
+            document.body.style.backgroundImage = `url('fondo (${currentBackgroundIndex}).jpg')`;
+        }
+
         spawnFood();
+        changeBackground();
 
         function drawBackground() {
             context.clearRect(0, 0, canvas.width, canvas.height);
@@ -214,6 +187,7 @@
                 document.getElementById('eatSound').play();
                 score++;
                 spawnFood();
+                changeBackground(); // Cambiar imagen de fondo cuando se hace un punto
             } else if (snakeX === specialFood.x && snakeY === specialFood.y) {
                 document.getElementById('eatSound').play();
                 lives += 3;
@@ -247,6 +221,7 @@
             score = 0;
             lives = 1;
             spawnFood();
+            changeBackground();
         }
 
         document.getElementById('up').addEventListener('click', () => {
@@ -277,93 +252,18 @@
             document.getElementById('confirm-reset').style.display = 'none';
         });
 
-        setInterval(draw, 400);
+        setInterval(draw, 500);  // Velocidad reducida
         window.addEventListener('click', startBackgroundMusic);
 
-        // Configuración del juego de Buscaminas
-        const buscaminas = document.getElementById('buscaminas');
-        const buscaminasReset = document.getElementById('buscaminas-reset');
-        const gridSize = 10;
-        const mines = 15;
-        let board = [];
-        let revealed = [];
+        // Evitar el doble clic para zoom
+        document.addEventListener('dblclick', (event) => {
+            event.preventDefault();
+        });
 
-        function setupBoard() {
-            board = Array.from({ length: gridSize }, () => Array(gridSize).fill(0));
-            revealed = Array.from({ length: gridSize }, () => Array(gridSize).fill(false));
-
-            let placedMines = 0;
-            while (placedMines < mines) {
-                const x = Math.floor(Math.random() * gridSize);
-                const y = Math.floor(Math.random() * gridSize);
-                if (board[x][y] === 0) {
-                    board[x][y] = 'M';
-                    placedMines++;
-                }
-            }
-
-            for (let x = 0; x < gridSize; x++) {
-                for (let y = 0; y < gridSize; y++) {
-                    if (board[x][y] !== 'M') {
-                        let mineCount = 0;
-                        for (let i = -1; i <= 1; i++) {
-                            for (let j = -1; j <= 1; j++) {
-                                if (x + i >= 0 && x + i < gridSize && y + j >= 0 && y + j < gridSize) {
-                                    if (board[x + i][y + j] === 'M') {
-                                        mineCount++;
-                                    }
-                                }
-                            }
-                        }
-                        board[x][y] = mineCount;
-                    }
-                }
-            }
-            renderBoard();
-        }
-
-        function renderBoard() {
-            buscaminas.innerHTML = '';
-            for (let x = 0; x < gridSize; x++) {
-                for (let y = 0; y < gridSize; y++) {
-                    const cell = document.createElement('div');
-                    cell.classList.add('cell');
-                    cell.dataset.x = x;
-                    cell.dataset.y = y;
-                    cell.addEventListener('click', () => revealCell(x, y));
-                    buscaminas.appendChild(cell);
-                }
-            }
-            buscaminasReset.style.display = 'none';
-        }
-
-        function revealCell(x, y) {
-            if (revealed[x][y]) return;
-            revealed[x][y] = true;
-            const cell = document.querySelector(`.cell[data-x='${x}'][data-y='${y}']`);
-            if (board[x][y] === 'M') {
-                cell.textContent = '💣';
-                cell.style.backgroundColor = 'red';
-                alert('¡Boom! Has perdido.');
-                buscaminasReset.style.display = 'block'; // Mostrar botón de reinicio
-            } else {
-                cell.textContent = board[x][y] > 0 ? board[x][y] : '';
-                cell.style.backgroundColor = '#ddd';
-                if (board[x][y] === 0) {
-                    for (let i = -1; i <= 1; i++) {
-                        for (let j = -1; j <= 1; j++) {
-                            if (x + i >= 0 && x + i < gridSize && y + j >= 0 && y + j < gridSize) {
-                                revealCell(x + i, y + j);
-                            }
-                        }
-                    }
-                }
-            }
-        }
-
-        buscaminasReset.addEventListener('click', setupBoard);
-
-        setupBoard();
+        // Desactivar el zoom de pellizco
+        document.addEventListener('gesturestart', (event) => {
+            event.preventDefault();
+        });
     </script>
 </body>
 </html>
