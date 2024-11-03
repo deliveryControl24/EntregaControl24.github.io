@@ -22,28 +22,35 @@
             max-width: 500px; /* Tamaño máximo */
             height: auto; /* Altura automática */
         }
-        #joystick {
-            position: relative;
-            width: 150px;
-            height: 150px;
-            border: 2px solid #c76a33; /* Color de borde */
-            border-radius: 75px; /* Hacerlo circular */
-            background-color: rgba(255, 255, 255, 0.7); /* Fondo semitransparente */
+        #dpad {
             display: flex;
+            flex-direction: column;
             align-items: center;
-            justify-content: center;
             margin-top: 20px;
         }
-        .stick {
-            width: 60px;
-            height: 60px;
-            border-radius: 30px; /* Hacerlo circular */
-            background-color: #c76a33; /* Color del joystick */
-            position: absolute;
-            transition: all 0.1s ease; /* Animación suave */
+        .button {
+            background-color: #c76a33;
+            color: white;
+            border: none;
+            padding: 15px; /* Aumentar el padding para hacer los botones más grandes */
+            margin: 5px;
+            cursor: pointer;
+            border-radius: 5px;
+            font-size: 24px; /* Aumentar el tamaño de la fuente */
+            width: 75px;
+            height: 75px;
+        }
+        .dpad-row {
+            display: flex;
+            justify-content: center;
         }
         #reset {
             margin-top: 20px;
+        }
+        #gif-container {
+            position: absolute;
+            top: 10px;
+            right: 10px;
         }
     </style>
 </head>
@@ -51,10 +58,23 @@
     <h1>Real Team Snake</h1>
     <canvas id="snake" width="500" height="500"></canvas>
     
-    <div id="joystick">
-        <div class="stick" id="stick"></div>
+    <div id="dpad">
+        <div class="dpad-row">
+            <button class="button" id="up">↑</button>
+        </div>
+        <div class="dpad-row">
+            <button class="button" id="left">←</button>
+            <button class="button" id="right">→</button>
+        </div>
+        <div class="dpad-row">
+            <button class="button" id="down">↓</button>
+        </div>
     </div>
     <button class="button" id="reset">Reiniciar</button>
+
+    <div id="gif-container">
+        <img src="d84dbcc5b7ad638a084dc34735a5585a.gif" alt="GIF" width="100">
+    </div>
 
     <audio id="eatSound" src="AUD-20241103-WA0001.aac"></audio>
     <audio id="backgroundMusic" src="AUD-20241103-WA0003.aac" loop></audio>
@@ -186,61 +206,19 @@
             spawnFood(); // Generar nueva comida
         }
 
-        // Controlar la dirección según la posición del joystick
-        function moveStick(event) {
-            const stick = document.getElementById('stick');
-            const joystick = document.getElementById('joystick');
-            const rect = joystick.getBoundingClientRect();
-            const centerX = rect.left + rect.width / 2;
-            const centerY = rect.top + rect.height / 2;
-            const offsetX = event.clientX - centerX;
-            const offsetY = event.clientY - centerY;
-            const distance = Math.sqrt(offsetX * offsetX + offsetY * offsetY);
-
-            // Limitar el movimiento del stick a un radio específico
-            const maxDistance = 50;
-            if (distance > maxDistance) {
-                const angle = Math.atan2(offsetY, offsetX);
-                stick.style.left = `${centerX + Math.cos(angle) * maxDistance - 30}px`;
-                stick.style.top = `${centerY + Math.sin(angle) * maxDistance - 30}px`;
-            } else {
-                stick.style.left = `${event.clientX - 30}px`;
-                stick.style.top = `${event.clientY - 30}px`;
-            }
-
-            // Cambiar dirección según la posición del stick
-            if (Math.abs(offsetX) > Math.abs(offsetY)) {
-                direction = offsetX > 0 ? 'RIGHT' : 'LEFT';
-            } else {
-                direction = offsetY > 0 ? 'DOWN' : 'UP';
-            }
-        }
-
-        // Resetear la posición del joystick al soltar el mouse/touch
-        function resetStick() {
-            const stick = document.getElementById('stick');
-            stick.style.left = `50%`;
-            stick.style.top = `50%`;
-            direction = ''; // Detener la dirección
-        }
-
-        // Añadir eventos para el joystick
-        const joystick = document.getElementById('joystick');
-        joystick.addEventListener('mousedown', (event) => {
-            moveStick(event);
-            document.addEventListener('mousemove', moveStick);
+        // Controlar la dirección según el D-pad
+        document.getElementById('up').addEventListener('click', () => {
+            if (direction !== 'DOWN') direction = 'UP';
         });
-
-        joystick.addEventListener('mouseup', resetStick);
-        joystick.addEventListener('mouseleave', resetStick);
-
-        // Para dispositivos táctiles
-        joystick.addEventListener('touchstart', (event) => {
-            moveStick(event.touches[0]);
-            document.addEventListener('touchmove', moveStick);
+        document.getElementById('down').addEventListener('click', () => {
+            if (direction !== 'UP') direction = 'DOWN';
         });
-
-        joystick.addEventListener('touchend', resetStick);
+        document.getElementById('left').addEventListener('click', () => {
+            if (direction !== 'RIGHT') direction = 'LEFT';
+        });
+        document.getElementById('right').addEventListener('click', () => {
+            if (direction !== 'LEFT') direction = 'RIGHT';
+        });
 
         // Iniciar la música de fondo en la primera interacción con el botón de reinicio
         document.getElementById('reset').addEventListener('click', () => {
@@ -248,8 +226,8 @@
             startBackgroundMusic(); // Iniciar música al reiniciar el juego
         });
 
-        // Llama a la función de dibujo en un bucle, ajustando la velocidad a 300 ms para reducir la velocidad
-        setInterval(draw, 300);
+        // Llama a la función de dibujo en un bucle, ajustando la velocidad a 400 ms para reducir la velocidad
+        setInterval(draw, 400);
         
         // Iniciar música de fondo en la primera interacción
         window.addEventListener('click', startBackgroundMusic);
