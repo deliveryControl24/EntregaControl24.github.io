@@ -2,8 +2,8 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Real Team Snake</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>Juegos - Snake y Buscaminas</title>
     <style>
         body {
             display: flex;
@@ -12,15 +12,16 @@
             justify-content: center;
             margin: 0;
             height: 100vh;
-            background-image: url('fondo.png'); /* Usar fondo.png como fondo de la página */
-            background-size: cover; /* Cubrir toda la página */
+            background-image: url('fondo.png');
+            background-size: cover;
+            overflow: hidden;
         }
         canvas {
-            border: 2px solid #c76a33; /* Color de borde */
-            background-color: #fff; /* Color de fondo del canvas */
-            width: 100%; /* Adaptar al ancho de la pantalla */
-            max-width: 500px; /* Tamaño máximo */
-            height: auto; /* Altura automática */
+            border: 2px solid #c76a33;
+            background-color: #fff;
+            width: 100%;
+            max-width: 500px;
+            height: auto;
         }
         #dpad {
             display: flex;
@@ -32,13 +33,14 @@
             background-color: #c76a33;
             color: white;
             border: none;
-            padding: 15px; /* Aumentar el padding para hacer los botones más grandes */
+            padding: 15px;
             margin: 5px;
             cursor: pointer;
             border-radius: 5px;
-            font-size: 24px; /* Aumentar el tamaño de la fuente */
+            font-size: 24px;
             width: 75px;
             height: 75px;
+            touch-action: manipulation;
         }
         .dpad-row {
             display: flex;
@@ -51,6 +53,50 @@
             position: absolute;
             top: 10px;
             right: 10px;
+        }
+        #confirm-reset {
+            display: none;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            background-color: rgba(255, 255, 255, 0.9);
+            padding: 20px;
+            border-radius: 10px;
+            position: absolute;
+            z-index: 100;
+        }
+        #confirm-reset .button {
+            width: 50px;
+            height: 50px;
+            font-size: 18px;
+        }
+        #buscaminas {
+            margin-top: 30px;
+            display: grid;
+            grid-template-columns: repeat(10, 30px);
+            gap: 2px;
+        }
+        .cell {
+            width: 30px;
+            height: 30px;
+            background-color: #eee;
+            border: 1px solid #aaa;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 16px;
+            cursor: pointer;
+        }
+        #buscaminas-reset {
+            display: none;
+            margin-top: 10px;
+            background-color: #c76a33;
+            color: white;
+            border: none;
+            padding: 10px;
+            cursor: pointer;
+            border-radius: 5px;
+            font-size: 18px;
         }
     </style>
 </head>
@@ -76,84 +122,86 @@
         <img src="d84dbcc5b7ad638a084dc34735a5585a.gif" alt="GIF" width="100">
     </div>
 
+    <div id="confirm-reset">
+        <p>¿Reiniciar juego?</p>
+        <button class="button" id="yes">Sí</button>
+        <button class="button" id="no">No</button>
+    </div>
+
+    <h1>Busca Extreme</h1>
+    <div id="buscaminas"></div>
+    <button id="buscaminas-reset">Reiniciar Buscaminas</button>
+
     <audio id="eatSound" src="AUD-20241103-WA0001.aac"></audio>
     <audio id="backgroundMusic" src="AUD-20241103-WA0003.aac" loop></audio>
 
     <script>
+        // Configuración del juego de la culebrita
         const canvas = document.getElementById('snake');
         const context = canvas.getContext('2d');
-        const box = 20; // Tamaño de cada segmento de la culebrita
-        let snake = [{ x: 9 * box, y: 9 * box }]; // Culebrita inicial
+        const box = 20;
+        let snake = [{ x: 9 * box, y: 9 * box }];
         let direction = '';
         let food = {};
         let specialFood = {};
         let score = 0;
-        let lives = 1; // Vidas iniciales
+        let lives = 1;
         const backgroundImage = new Image();
-        backgroundImage.src = 'fondo.png'; // Usar fondo.png
+        backgroundImage.src = 'fondo.png';
 
-        // Configurar música de fondo
         const backgroundMusic = document.getElementById('backgroundMusic');
-        backgroundMusic.volume = 0.5; // 50% del volumen
+        backgroundMusic.volume = 0.5;
 
-        // Función para iniciar la música de fondo
         function startBackgroundMusic() {
             backgroundMusic.play().catch((error) => {
                 console.error("Error al reproducir la música de fondo:", error);
             });
         }
 
-        // Función para inicializar la comida
         function spawnFood() {
             food = { x: Math.floor(Math.random() * (canvas.width / box)) * box, y: Math.floor(Math.random() * (canvas.height / box)) * box };
-            if (score % 3 === 0 && score > 0) { // Cada 3 piezas, crea comida especial
+            if (score % 3 === 0 && score > 0) {
                 specialFood = { x: Math.floor(Math.random() * (canvas.width / box)) * box, y: Math.floor(Math.random() * (canvas.height / box)) * box };
             } else {
-                specialFood = {}; // No hay comida especial
+                specialFood = {};
             }
         }
 
-        // Inicializar comida
         spawnFood();
 
-        // Función para dibujar el fondo y el texto
         function drawBackground() {
-            context.clearRect(0, 0, canvas.width, canvas.height); // Limpiar el canvas
+            context.clearRect(0, 0, canvas.width, canvas.height);
             context.drawImage(backgroundImage, 0, 0, canvas.width, canvas.height);
-            context.fillStyle = '#c76a33'; // Color del texto
+            context.fillStyle = '#c76a33';
             context.font = '32px Arial';
             context.textAlign = 'center';
             context.textBaseline = 'middle';
             context.fillText('SIENDO KULION', canvas.width / 2, canvas.height / 2);
         }
 
-        // Función para dibujar la culebrita
         function drawSnake() {
             for (let i = 0; i < snake.length; i++) {
-                context.fillStyle = i === 0 ? 'green' : '#5cb85c'; // La cabeza de la culebrita es verde
+                context.fillStyle = i === 0 ? 'green' : '#5cb85c';
                 context.fillRect(snake[i].x, snake[i].y, box, box);
                 context.strokeStyle = '#fff';
                 context.strokeRect(snake[i].x, snake[i].y, box, box);
             }
         }
 
-        // Función para dibujar la comida
         function drawFood() {
-            context.fillStyle = 'red'; // Color de la comida normal
+            context.fillStyle = 'red';
             context.fillRect(food.x, food.y, box, box);
             if (specialFood.x !== undefined) {
-                context.fillStyle = 'gold'; // Color de la comida especial
+                context.fillStyle = 'gold';
                 context.fillRect(specialFood.x, specialFood.y, box, box);
             }
         }
 
-        // Función principal de dibujo
         function draw() {
             drawBackground();
             drawSnake();
             drawFood();
 
-            // Mover la culebrita
             let snakeX = snake[0].x;
             let snakeY = snake[0].y;
 
@@ -162,32 +210,28 @@
             if (direction === 'RIGHT') snakeX += box;
             if (direction === 'DOWN') snakeY += box;
 
-            // Comprobar colisión con la comida
             if (snakeX === food.x && snakeY === food.y) {
-                document.getElementById('eatSound').play(); // Reproducir sonido
+                document.getElementById('eatSound').play();
                 score++;
-                spawnFood(); // Generar nueva comida
-            } else if (snakeX === specialFood.x && snakeY === specialFood.y) { // Comida especial
-                document.getElementById('eatSound').play(); // Reproducir sonido
-                lives += 3; // Ganar 3 vidas
+                spawnFood();
+            } else if (snakeX === specialFood.x && snakeY === specialFood.y) {
+                document.getElementById('eatSound').play();
+                lives += 3;
                 score++;
-                specialFood = {}; // Eliminar comida especial
-                spawnFood(); // Generar nueva comida
+                specialFood = {};
+                spawnFood();
             } else {
-                snake.pop(); // Eliminar el último segmento si no ha comido
+                snake.pop();
             }
 
-            // Agregar nuevo segmento al frente
             const newHead = { x: snakeX, y: snakeY };
             snake.unshift(newHead);
 
-            // Comprobar colisión con los bordes o con sí misma
             if (snakeX < 0 || snakeX >= canvas.width || snakeY < 0 || snakeY >= canvas.height || collision(newHead)) {
-                resetGame(); // Reiniciar el juego al chocar
+                resetGame();
             }
         }
 
-        // Comprobar colisión con la culebrita
         function collision(head) {
             for (let i = 1; i < snake.length; i++) {
                 if (head.x === snake[i].x && head.y === snake[i].y) {
@@ -197,16 +241,14 @@
             return false;
         }
 
-        // Reiniciar el juego
         function resetGame() {
             snake = [{ x: 9 * box, y: 9 * box }];
             direction = '';
             score = 0;
             lives = 1;
-            spawnFood(); // Generar nueva comida
+            spawnFood();
         }
 
-        // Controlar la dirección según el D-pad
         document.getElementById('up').addEventListener('click', () => {
             if (direction !== 'DOWN') direction = 'UP';
         });
@@ -220,17 +262,108 @@
             if (direction !== 'LEFT') direction = 'RIGHT';
         });
 
-        // Iniciar la música de fondo en la primera interacción con el botón de reinicio
         document.getElementById('reset').addEventListener('click', () => {
-            resetGame();
-            startBackgroundMusic(); // Iniciar música al reiniciar el juego
+            const confirmReset = document.getElementById('confirm-reset');
+            confirmReset.style.display = 'flex';
         });
 
-        // Llama a la función de dibujo en un bucle, ajustando la velocidad a 400 ms para reducir la velocidad
+        document.getElementById('yes').addEventListener('click', () => {
+            resetGame();
+            startBackgroundMusic();
+            document.getElementById('confirm-reset').style.display = 'none';
+        });
+
+        document.getElementById('no').addEventListener('click', () => {
+            document.getElementById('confirm-reset').style.display = 'none';
+        });
+
         setInterval(draw, 400);
-        
-        // Iniciar música de fondo en la primera interacción
         window.addEventListener('click', startBackgroundMusic);
+
+        // Configuración del juego de Buscaminas
+        const buscaminas = document.getElementById('buscaminas');
+        const buscaminasReset = document.getElementById('buscaminas-reset');
+        const gridSize = 10;
+        const mines = 15;
+        let board = [];
+        let revealed = [];
+
+        function setupBoard() {
+            board = Array.from({ length: gridSize }, () => Array(gridSize).fill(0));
+            revealed = Array.from({ length: gridSize }, () => Array(gridSize).fill(false));
+
+            let placedMines = 0;
+            while (placedMines < mines) {
+                const x = Math.floor(Math.random() * gridSize);
+                const y = Math.floor(Math.random() * gridSize);
+                if (board[x][y] === 0) {
+                    board[x][y] = 'M';
+                    placedMines++;
+                }
+            }
+
+            for (let x = 0; x < gridSize; x++) {
+                for (let y = 0; y < gridSize; y++) {
+                    if (board[x][y] !== 'M') {
+                        let mineCount = 0;
+                        for (let i = -1; i <= 1; i++) {
+                            for (let j = -1; j <= 1; j++) {
+                                if (x + i >= 0 && x + i < gridSize && y + j >= 0 && y + j < gridSize) {
+                                    if (board[x + i][y + j] === 'M') {
+                                        mineCount++;
+                                    }
+                                }
+                            }
+                        }
+                        board[x][y] = mineCount;
+                    }
+                }
+            }
+            renderBoard();
+        }
+
+        function renderBoard() {
+            buscaminas.innerHTML = '';
+            for (let x = 0; x < gridSize; x++) {
+                for (let y = 0; y < gridSize; y++) {
+                    const cell = document.createElement('div');
+                    cell.classList.add('cell');
+                    cell.dataset.x = x;
+                    cell.dataset.y = y;
+                    cell.addEventListener('click', () => revealCell(x, y));
+                    buscaminas.appendChild(cell);
+                }
+            }
+            buscaminasReset.style.display = 'none';
+        }
+
+        function revealCell(x, y) {
+            if (revealed[x][y]) return;
+            revealed[x][y] = true;
+            const cell = document.querySelector(`.cell[data-x='${x}'][data-y='${y}']`);
+            if (board[x][y] === 'M') {
+                cell.textContent = '💣';
+                cell.style.backgroundColor = 'red';
+                alert('¡Boom! Has perdido.');
+                buscaminasReset.style.display = 'block'; // Mostrar botón de reinicio
+            } else {
+                cell.textContent = board[x][y] > 0 ? board[x][y] : '';
+                cell.style.backgroundColor = '#ddd';
+                if (board[x][y] === 0) {
+                    for (let i = -1; i <= 1; i++) {
+                        for (let j = -1; j <= 1; j++) {
+                            if (x + i >= 0 && x + i < gridSize && y + j >= 0 && y + j < gridSize) {
+                                revealCell(x + i, y + j);
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        buscaminasReset.addEventListener('click', setupBoard);
+
+        setupBoard();
     </script>
 </body>
 </html>
